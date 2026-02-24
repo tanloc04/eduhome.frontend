@@ -24,11 +24,11 @@ export default function Login() {
 
   return (
     <Card className="w-full bg-white/60 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-2xl">
-      <CardHeader className="space-y-3 pb-6 pt-8">
-        <CardTitle className="text-3xl font-extrabold text-center text-slate-800 tracking-tight">
+      <CardHeader className="space-y-3 pb-6 pt-8 sm:pt-10 sm:pb-8">
+        <CardTitle className="text-3xl sm:text-4xl font-extrabold text-center text-slate-800 tracking-tight">
           Đăng Nhập
         </CardTitle>
-        <CardDescription className="text-center text-slate-600 text-base">
+        <CardDescription className="text-center text-slate-600 text-sm sm:text-base">
           Hệ thống quản lý Ký túc xá EduHome
         </CardDescription>
       </CardHeader>
@@ -47,7 +47,6 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              // Thêm chút hiệu ứng khi focus vào input
               className="bg-white/50 focus:bg-white transition-colors py-5 border-slate-200"
             />
           </div>
