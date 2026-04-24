@@ -24,5 +24,16 @@ export interface LoginRequest {
 export interface LoginResponse {
   message: string;
   token: string;
+  refreshToken: string;
   // Có thể có thêm thông tin user tùy theo BE của bạn trả về
+}
+
+export interface UserProfile {
+  studentCode: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  major: string;
+  dateOfBirth: string;
+  gender: boolean;
 }

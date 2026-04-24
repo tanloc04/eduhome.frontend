@@ -5,7 +5,9 @@ import type {
   RegisterResponse,
   LoginRequest,
   LoginResponse,
+  UserProfile,
 } from "@/types/auth.type";
+import { apiClient } from "./apiClient";
 
 // Lấy base URL từ cấu hình (tạm thời hardcode theo Swagger của bạn, sau này nên chuyển vào file .env)
 const API_BASE_URL = "http://localhost:5294/api";
@@ -24,6 +26,11 @@ export const authService = {
       `${API_BASE_URL}/Auth/login`,
       data,
     );
+    return response.data;
+  },
+
+  getProfile: async (): Promise<UserProfile> => {
+    const response = await apiClient.get<UserProfile>("/Auth/profile");
     return response.data;
   },
 };

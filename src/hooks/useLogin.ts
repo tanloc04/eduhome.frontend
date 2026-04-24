@@ -19,8 +19,7 @@ export const useLogin = () => {
       // 1. Lưu Token vào RAM (Zustand) - Đọc từ response.token
       setAuth(response.token);
 
-      // 2. Tạm thời comment/xóa dòng này lại vì BE chưa trả về refreshToken
-      // localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
 
       return { success: true };
     } catch (err: any) {

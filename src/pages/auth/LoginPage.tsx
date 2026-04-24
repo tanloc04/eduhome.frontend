@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAuthStore } from "@/store/authStore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,8 +42,15 @@ export default function Login() {
     const result = await login(data);
 
     if (result.success) {
-      // Đăng nhập thành công -> Đá bay thẳng vào Student Portal (Dashboard)
-      navigate("/student/dashboard");
+      const currentRole = useAuthStore.getState().role;
+
+      if (currentRole === "Admin" || currentRole === "BuildingManager") {
+        navigate("/admin/dashboard");
+      } else if (currentRole === "Accountant") {
+        navigate("/accountant/dashboard");
+      } else {
+        navigate("/student/dashboard");
+      }
     }
   };
 
