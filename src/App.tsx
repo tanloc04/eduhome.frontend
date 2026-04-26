@@ -15,6 +15,10 @@ import { Toaster } from "react-hot-toast";
 import IssueManager from "./pages/admin/IssueManager";
 import SystemSettings from "./pages/admin/SystemSettings";
 import StudentProfile from "./pages/student/Profile";
+import StudentFinance from "./pages/student/Finance";
+import PaymentReturn from "./pages/student/PaymentReturn";
+import StudentSupport from "./pages/student/Support";
+import StudentRoomInfo from "./pages/student/RoomInfo";
 
 function App() {
   const queryClient = new QueryClient({
@@ -53,6 +57,10 @@ function App() {
               <Route path="dashboard" element={<StudentDashboard />} />
               {/* Các trang khác sẽ thêm sau */}
               <Route path="profile" element={<StudentProfile />} />
+              <Route path="finance" element={<StudentFinance />} />
+              <Route path="support" element={<StudentSupport />} />
+              <Route path="room" element={<StudentRoomInfo />} />
+              <Route path="payment-return" element={<PaymentReturn />} />
             </Route>
           </Route>
 

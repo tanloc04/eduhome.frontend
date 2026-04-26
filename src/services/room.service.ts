@@ -1,5 +1,5 @@
 import { apiClient } from "./apiClient";
-import type { Room, RoomPayload } from "@/types/room.types";
+import type { Room, RoomDetailDto, RoomPayload } from "@/types/room.types";
 
 export const roomService = {
   getAll: async (): Promise<Room[]> => {
@@ -24,5 +24,10 @@ export const roomService = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/Rooms/${id}`);
+  },
+
+  getMyRoom: async (): Promise<RoomDetailDto> => {
+    const response = await apiClient.get("/Rooms/my-room");
+    return response.data;
   },
 };

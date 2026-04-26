@@ -7,19 +7,31 @@ import {
   Calculator,
   Settings,
   Building2,
+  FileText,
+  Banknote,
+  X,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import {
   useServiceTypes,
   useCreateServiceType,
   useCreateMeterReading,
   useGenerateInvoices,
+  useProcessManualPayment,
+  useAllInvoices, // Đã import hook xịn xò của bạn vào đây
 } from "@/hooks/useFinance";
 import { useBuildings } from "@/hooks/useBuildings";
 import { useRooms } from "@/hooks/useRooms";
 import toast from "react-hot-toast";
 
 export default function FinanceManager() {
-  const [activeTab, setActiveTab] = useState<1 | 2 | 3>(1);
+  const [activeTab, setActiveTab] = useState<1 | 2 | 3 | 4>(1);
+
+  // --- STATE BỘ LỌC CHO TAB 4 ---
+  const [invoiceFilter, setInvoiceFilter] = useState<number | undefined>(
+    undefined,
+  );
 
   // --- Hooks ---
   const { data: serviceTypes = [], isLoading: isServicesLoading } =
@@ -28,9 +40,14 @@ export default function FinanceManager() {
     useBuildings();
   const { data: rooms = [], isLoading: isRoomsLoading } = useRooms();
 
+  // ĐÃ GẮN HOOK useAllInvoices KÈM FILTER VÀO ĐÂY
+  const { data: allInvoices = [], isLoading: isInvoicesLoading } =
+    useAllInvoices(invoiceFilter);
+
   const createServiceMutation = useCreateServiceType();
   const createMeterMutation = useCreateMeterReading();
   const generateInvoiceMutation = useGenerateInvoices();
+  const processManualMutation = useProcessManualPayment();
 
   const isLoading = isServicesLoading || isBuildingsLoading || isRoomsLoading;
 
@@ -55,15 +72,22 @@ export default function FinanceManager() {
     year: new Date().getFullYear(),
   });
 
+  // States cho Modal Thu Tiền Mặt
+  const [isManualPayOpen, setIsManualPayOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [manualForm, setManualForm] = useState({
+    amountPaid: 0,
+    transactionId: "",
+  });
+
   // --- Handlers ---
   const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await createServiceMutation.mutateAsync(serviceForm);
       setServiceForm({ name: "", unit: "", unitPrice: 0 });
-      alert("Thêm dịch vụ thành công!");
+      toast.success("Thêm dịch vụ thành công!");
     } catch (error: any) {
-      console.error(error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.Error ||
@@ -79,7 +103,6 @@ export default function FinanceManager() {
   const handleCreateMeterReading = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Convert YYYY-MM to full ISO string for backend
       const fullDateStr = new Date(
         `${meterForm.billingMonth}-01T00:00:00Z`,
       ).toISOString();
@@ -91,9 +114,8 @@ export default function FinanceManager() {
         newValue: meterForm.newValue,
       });
       setMeterForm((prev) => ({ ...prev, oldValue: 0, newValue: 0 }));
-      alert("Ghi chỉ số thành công!");
+      toast.success("Ghi chỉ số thành công!");
     } catch (error: any) {
-      console.error(error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.Error ||
@@ -111,13 +133,45 @@ export default function FinanceManager() {
     ) {
       try {
         const res = await generateInvoiceMutation.mutateAsync(invoiceForm);
-        alert(res.message);
+        toast.success(res.message || "Tạo hóa đơn thành công!");
       } catch (error: any) {
-        console.error(error);
         const errorMessage =
           error.response?.data?.Error || "Có lỗi xảy ra khi tạo hóa đơn.";
         toast.error(errorMessage);
       }
+    }
+  };
+
+  const openManualPayment = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setManualForm({
+      amountPaid: invoice.totalAmount,
+      transactionId: `PT-${Math.floor(Math.random() * 10000)}`,
+    });
+    setIsManualPayOpen(true);
+  };
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInvoice) return;
+
+    try {
+      await processManualMutation.mutateAsync({
+        invoiceId: selectedInvoice.id,
+        paymentMethod: 0,
+        amountPaid: manualForm.amountPaid,
+        transactionId: manualForm.transactionId,
+      });
+      toast.success(
+        `Đã thu ${manualForm.amountPaid.toLocaleString("vi-VN")}đ thành công!`,
+      );
+      setIsManualPayOpen(false);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.Error ||
+        "Có lỗi xảy ra khi xử lý thanh toán!";
+      toast.error(errorMessage);
     }
   };
 
@@ -130,7 +184,7 @@ export default function FinanceManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex items-center gap-2">
         <Receipt className="w-6 h-6 text-indigo-600" />
         <h2 className="text-2xl font-bold text-slate-800">
@@ -138,7 +192,8 @@ export default function FinanceManager() {
         </h2>
       </div>
 
-      <div className="flex gap-4 border-b border-slate-200">
+      {/* --- MENU TABS --- */}
+      <div className="flex flex-wrap gap-4 border-b border-slate-200">
         <button
           onClick={() => setActiveTab(1)}
           className={`pb-3 px-2 font-medium flex items-center gap-2 border-b-2 transition-colors ${
@@ -167,12 +222,21 @@ export default function FinanceManager() {
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
-          <Calculator className="w-4 h-4" /> Chốt Hóa đơn tháng
+          <Calculator className="w-4 h-4" /> Chốt Hóa đơn
+        </button>
+        <button
+          onClick={() => setActiveTab(4)}
+          className={`pb-3 px-2 font-medium flex items-center gap-2 border-b-2 transition-colors ${
+            activeTab === 4
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <FileText className="w-4 h-4" /> Quản lý thu tiền
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-        {/* TAB 1: SERVICE TYPES */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 min-h-[500px]">
         {activeTab === 1 && (
           <div className="space-y-6">
             <form
@@ -181,7 +245,7 @@ export default function FinanceManager() {
             >
               <div className="flex-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Tên dịch vụ (VD: Tiền điện)
+                  Tên dịch vụ
                 </label>
                 <input
                   type="text"
@@ -195,7 +259,7 @@ export default function FinanceManager() {
               </div>
               <div className="w-32">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Đơn vị (VD: kWh)
+                  Đơn vị
                 </label>
                 <input
                   type="text"
@@ -262,7 +326,6 @@ export default function FinanceManager() {
           </div>
         )}
 
-        {/* TAB 2: METER READINGS */}
         {activeTab === 2 && (
           <form
             onSubmit={handleCreateMeterReading}
@@ -323,7 +386,6 @@ export default function FinanceManager() {
                 </select>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -352,7 +414,7 @@ export default function FinanceManager() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Tháng chốt (Tháng/Năm)
+                  Tháng chốt
                 </label>
                 <input
                   type="month"
@@ -365,7 +427,6 @@ export default function FinanceManager() {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -404,7 +465,6 @@ export default function FinanceManager() {
                 />
               </div>
             </div>
-
             <button
               type="submit"
               disabled={
@@ -412,7 +472,7 @@ export default function FinanceManager() {
                 meterForm.roomId === 0 ||
                 meterForm.serviceTypeId === 0
               }
-              className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
               {createMeterMutation.isPending
                 ? "Đang lưu..."
@@ -421,7 +481,6 @@ export default function FinanceManager() {
           </form>
         )}
 
-        {/* TAB 3: GENERATE INVOICES */}
         {activeTab === 3 && (
           <div className="max-w-md mx-auto py-8 text-center space-y-8">
             <div>
@@ -436,7 +495,6 @@ export default function FinanceManager() {
                 đã ghi để tạo hóa đơn cho từng sinh viên.
               </p>
             </div>
-
             <form onSubmit={handleGenerateInvoices} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -480,11 +538,10 @@ export default function FinanceManager() {
                   />
                 </div>
               </div>
-
               <button
                 type="submit"
                 disabled={generateInvoiceMutation.isPending}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50"
               >
                 {generateInvoiceMutation.isPending ? (
                   <>
@@ -500,7 +557,191 @@ export default function FinanceManager() {
             </form>
           </div>
         )}
+
+        {/* --- TAB 4 ĐÃ ĐƯỢC NÂNG CẤP BỘ LỌC VÀ HOOK API --- */}
+        {activeTab === 4 && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <h3 className="text-lg font-bold text-slate-800">
+                Danh sách hóa đơn sinh viên
+              </h3>
+
+              {/* BỘ LỌC HÓA ĐƠN */}
+              <div className="flex bg-slate-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setInvoiceFilter(undefined)}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${invoiceFilter === undefined ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Tất cả
+                </button>
+                <button
+                  onClick={() => setInvoiceFilter(0)}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${invoiceFilter === 0 ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Chưa thu
+                </button>
+                <button
+                  onClick={() => setInvoiceFilter(1)}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${invoiceFilter === 1 ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Đã thu
+                </button>
+              </div>
+            </div>
+
+            {isInvoicesLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+              </div>
+            ) : allInvoices.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-200 rounded-xl">
+                Không tìm thấy hóa đơn nào phù hợp.
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                    <th className="p-4 font-semibold">Mã HĐ</th>
+                    <th className="p-4 font-semibold">Sinh viên</th>
+                    <th className="p-4 font-semibold">Tổng tiền</th>
+                    <th className="p-4 font-semibold">Trạng thái</th>
+                    <th className="p-4 font-semibold">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allInvoices.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className="border-b border-slate-100 hover:bg-slate-50"
+                    >
+                      <td className="p-4 font-mono text-sm">
+                        {inv.id.substring(0, 8).toUpperCase()}
+                      </td>
+                      <td className="p-4 font-medium text-slate-800">
+                        {inv.studentName}
+                      </td>
+                      <td className="p-4 font-bold text-slate-700">
+                        {inv.totalAmount.toLocaleString("vi-VN")} đ
+                      </td>
+                      <td className="p-4">
+                        {inv.status === 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-50 text-orange-600 text-xs font-bold border border-orange-200">
+                            <Clock className="w-3 h-3" /> Pending
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" /> Paid
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {inv.status === 0 && (
+                          <button
+                            onClick={() => openManualPayment(inv)}
+                            className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-600 hover:text-white transition-colors"
+                          >
+                            <Banknote className="w-4 h-4" /> Thu tiền
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
+
+      {isManualPayOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Banknote className="w-5 h-5" />
+                <h3 className="font-bold text-lg text-slate-800">
+                  Thu tiền tại quầy
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsManualPayOpen(false)}
+                className="p-1 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleManualSubmit} className="p-6 space-y-4">
+              <div className="bg-orange-50 text-orange-700 p-3 rounded-lg text-sm mb-4 border border-orange-100">
+                Đang thu tiền hóa đơn của:{" "}
+                <strong className="block text-base">
+                  {selectedInvoice?.studentName || "Sinh viên"}
+                </strong>
+                Mã HĐ:{" "}
+                <span className="font-mono">
+                  {selectedInvoice?.id?.substring(0, 8).toUpperCase()}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Số tiền thực thu (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={manualForm.amountPaid}
+                  onChange={(e) =>
+                    setManualForm({
+                      ...manualForm,
+                      amountPaid: Number(e.target.value),
+                    })
+                  }
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 font-bold text-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Mã phiếu thu / Ghi chú
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={manualForm.transactionId}
+                  onChange={(e) =>
+                    setManualForm({
+                      ...manualForm,
+                      transactionId: e.target.value,
+                    })
+                  }
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="VD: PT-001, Chuyển khoản Vietcombank..."
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsManualPayOpen(false)}
+                  className="px-5 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={processManualMutation.isPending}
+                  className="px-5 py-2.5 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {processManualMutation.isPending
+                    ? "Đang xử lý..."
+                    : "Xác nhận thu tiền"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

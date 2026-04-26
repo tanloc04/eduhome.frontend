@@ -47,3 +47,12 @@ export const useDeleteRoom = () => {
     },
   });
 };
+
+export const useMyRoom = () => {
+  return useQuery({
+    queryKey: ["my-room"],
+    queryFn: roomService.getMyRoom,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+};
