@@ -9,6 +9,12 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import BuildingManager from "./pages/admin/BuildingManager";
 import RoomManagementTabs from "./pages/admin/RoomManagementTabs";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import StudentManager from "./pages/admin/StudentManager";
+import FinanceManager from "./pages/admin/FinanceManager";
+import { Toaster } from "react-hot-toast";
+import IssueManager from "./pages/admin/IssueManager";
+import SystemSettings from "./pages/admin/SystemSettings";
+import StudentProfile from "./pages/student/Profile";
 
 function App() {
   const queryClient = new QueryClient({
@@ -46,6 +52,7 @@ function App() {
               {/* Tạm thời tạo 1 thẻ div để test giao diện Main Content */}
               <Route path="dashboard" element={<StudentDashboard />} />
               {/* Các trang khác sẽ thêm sau */}
+              <Route path="profile" element={<StudentProfile />} />
             </Route>
           </Route>
 
@@ -62,10 +69,15 @@ function App() {
               {/* Các trang quản lý phòng, sinh viên... sẽ nằm ở đây */}
               <Route path="rooms" element={<RoomManagementTabs />} />
               <Route path="buildings" element={<BuildingManager />} />
+              <Route path="students" element={<StudentManager />} />
+              <Route path="finance" element={<FinanceManager />} />
+              <Route path="issues" element={<IssueManager />} />
+              <Route path="settings" element={<SystemSettings />} />
             </Route>
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-right" reverseOrder={false} />
     </QueryClientProvider>
   );
 }
