@@ -38,8 +38,17 @@ export default function StudentRoomInfo() {
     );
   }
 
+  // Render trạng thái phòng dựa theo Enum trong ERD (0-Trống, 1-Đã đầy, 2-Bảo trì)
   const getRoomStatus = (status: number) => {
-    switch (status) {
+    // THÊM LOGIC ĐỘ CHẾ Ở ĐÂY:
+    // Đếm số người thực tế đang ở
+    const currentOccupants = room.roommates?.length || 0;
+
+    // Nếu DB báo là Trống (0) NHƯNG thực tế đã đủ người -> Ép trạng thái hiển thị thành Đầy (1)
+    const finalStatus =
+      status === 0 && currentOccupants >= (room.capacity || 0) ? 1 : status;
+
+    switch (finalStatus) {
       case 0:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-sm font-semibold border border-emerald-200">

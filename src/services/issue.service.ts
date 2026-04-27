@@ -8,7 +8,6 @@ export const issueService = {
     return response.data;
   },
 
-  // [ADMIN] Đổi trạng thái sự cố
   updateStatus: async (id: number, status: number): Promise<any> => {
     const response = await apiClient.patch(`/IssueTickets/${id}/status`, {
       status,
@@ -16,21 +15,8 @@ export const issueService = {
     return response.data;
   },
 
-  // [STUDENT] Gửi yêu cầu sửa chữa (Có đính kèm file ảnh)
-  createIssue: async (payload: CreateIssuePayload): Promise<any> => {
-    const formData = new FormData();
-
-    // Nạp dữ liệu vào FormData (Tên trường khớp với Swagger)
-    formData.append("RoomId", payload.roomId.toString());
-    formData.append("Title", payload.title);
-    formData.append("Description", payload.description);
-
-    // Nếu sinh viên có chọn ảnh thì mới append vào
-    if (payload.imageFile) {
-      formData.append("ImageFile", payload.imageFile);
-    }
-
-    const response = await apiClient.post("/IssueTickets", formData);
+  createIssue: async (payload: FormData): Promise<any> => {
+    const response = await apiClient.post("/IssueTickets", payload);
     return response.data;
   },
 };
