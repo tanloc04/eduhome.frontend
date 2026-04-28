@@ -5,6 +5,9 @@ EduHome là một hệ thống quản lý ký túc xá tập trung được phá
 
 Hệ thống được thiết kế với khả năng chịu tải cao, đảm bảo tính nhất quán dữ liệu trong các giao dịch tài chính và ngăn chặn tình trạng xung đột dữ liệu khi có lượng lớn truy cập đồng thời.
 
+## Video Demo
+https://youtu.be/bBJcuD3ZaYk
+
 ## Giao diện ứng dụng
 
 [Cụm 1: Màn hình Dashboard Tổng quan của Admin]
