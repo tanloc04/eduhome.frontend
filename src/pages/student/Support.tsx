@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Wrench,
   Send,
@@ -10,6 +10,7 @@ import {
 import toast from "react-hot-toast";
 // Import hook của bạn vào đây (nhớ trỏ đúng đường dẫn nhé)
 import { useCreateIssue } from "@/hooks/useIssues";
+import { useMyRoom } from "@/hooks/useRooms";
 
 export default function StudentSupport() {
   const [title, setTitle] = useState("");
@@ -22,6 +23,13 @@ export default function StudentSupport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { mutateAsync: createIssue, isPending } = useCreateIssue();
+  const { data: myRoom, isLoading: isRoomLoading } = useMyRoom();
+
+  useEffect(() => {
+    if (myRoom?.id) {
+      setRoomId(myRoom.id);
+    }
+  }, [myRoom]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,6 +80,7 @@ export default function StudentSupport() {
       setRoomId("");
       removeImage();
     } catch (error: any) {
+      console.error("LỖI THẬT SỰ LÀ ĐÂY NÈ:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.title ||
@@ -111,12 +120,16 @@ export default function StudentSupport() {
                     Phòng của bạn <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    required
-                    placeholder="VD: 201"
-                    value={roomId}
-                    onChange={(e) => setRoomId(parseInt(e.target.value) || "")}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                    type="text"
+                    disabled // Khóa không cho nhập tay
+                    value={
+                      isRoomLoading
+                        ? "Đang tải thông tin..."
+                        : myRoom
+                          ? `Phòng ${myRoom.name?.replace("Phòng ", "")} - Tòa ${myRoom.buildingName}`
+                          : "Bạn chưa được xếp phòng"
+                    }
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 bg-slate-100 text-slate-600 font-medium cursor-not-allowed transition-shadow"
                   />
                 </div>
 

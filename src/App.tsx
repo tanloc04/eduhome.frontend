@@ -19,6 +19,8 @@ import StudentFinance from "./pages/student/Finance";
 import PaymentReturn from "./pages/student/PaymentReturn";
 import StudentSupport from "./pages/student/Support";
 import StudentRoomInfo from "./pages/student/RoomInfo";
+import RoomManagementHub from "./pages/student/RoomManager";
+import StudentManagementTabs from "./pages/admin/StudentManagementTabs";
 
 function App() {
   const queryClient = new QueryClient({
@@ -59,7 +61,7 @@ function App() {
               <Route path="profile" element={<StudentProfile />} />
               <Route path="finance" element={<StudentFinance />} />
               <Route path="support" element={<StudentSupport />} />
-              <Route path="room" element={<StudentRoomInfo />} />
+              <Route path="room" element={<RoomManagementHub />} />
               <Route path="payment-return" element={<PaymentReturn />} />
             </Route>
           </Route>
@@ -77,7 +79,7 @@ function App() {
               {/* Các trang quản lý phòng, sinh viên... sẽ nằm ở đây */}
               <Route path="rooms" element={<RoomManagementTabs />} />
               <Route path="buildings" element={<BuildingManager />} />
-              <Route path="students" element={<StudentManager />} />
+              <Route path="students" element={<StudentManagementTabs />} />
               <Route path="finance" element={<FinanceManager />} />
               <Route path="issues" element={<IssueManager />} />
               <Route path="settings" element={<SystemSettings />} />

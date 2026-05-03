@@ -23,8 +23,7 @@ export const useUpdateIssueStatus = () => {
 export const useCreateIssue = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateIssuePayload) =>
-      issueService.createIssue(payload),
+    mutationFn: (payload: FormData) => issueService.createIssue(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issues"] });
     },
